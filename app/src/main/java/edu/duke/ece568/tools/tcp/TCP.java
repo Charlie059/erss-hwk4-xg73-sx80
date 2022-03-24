@@ -1,4 +1,4 @@
-package edu.duke.ece568;
+package edu.duke.ece568.tools.tcp;
 
 import java.io.*;
 import java.net.ServerSocket;

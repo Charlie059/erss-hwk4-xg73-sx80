@@ -1,5 +1,8 @@
 package edu.duke.ece568;
 
+import edu.duke.ece568.tools.database.PostgreSQLJDBC;
+import edu.duke.ece568.tools.tcp.TCP;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.util.logging.FileHandler;
@@ -38,7 +41,7 @@ public class Server {
         initLogger();
         try {
             this.tcp = new TCP(portNum);
-            this.postgreSQLJDBC = new PostgreSQLJDBC(this.logger);
+            this.postgreSQLJDBC = PostgreSQLJDBC.getInstance();
         } catch (IOException e) {
             this.logger.info("Cannot build TCP connection.");
         }

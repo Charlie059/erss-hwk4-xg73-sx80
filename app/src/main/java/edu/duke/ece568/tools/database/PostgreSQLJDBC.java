@@ -18,6 +18,7 @@ public class PostgreSQLJDBC {
      * @return the instance
      */
     public static PostgreSQLJDBC getInstance() {
+        System.out.println("DB getInstance");
         if (postgreSQLJDBC == null) postgreSQLJDBC = new PostgreSQLJDBC();
         return postgreSQLJDBC;
     }
@@ -26,6 +27,7 @@ public class PostgreSQLJDBC {
      * Construct of PostgreSQLJDBC which clear the tables and build the tables
      */
     private PostgreSQLJDBC(){
+        System.out.println("Construct DB");
         // clear table if exist
         this.clearTables();
         // build table
@@ -36,11 +38,13 @@ public class PostgreSQLJDBC {
      * Connect Database
      */
     private static Connection connectDB() {
-        Connection c = null;
+        Connection c;
         try {
             Class.forName("org.postgresql.Driver");
-            c = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres",
+            c = DriverManager.getConnection("jdbc:postgresql://database:5432/postgres",
                             "postgres", "postgres");
+            Logger logger = Logger.getSingleton();
+            System.out.println("Connect to DB");
             return c;
         } catch (SQLException | ClassNotFoundException e) {
             Logger logger = Logger.getSingleton();
@@ -53,16 +57,14 @@ public class PostgreSQLJDBC {
      * Run SQL statement
      * @param sql indicated string
      */
-    public void runSQL(String sql){
+    private void runSQL(String sql){
         Statement statement;
         try {
             this.c = connectDB();
-            if(this.c != null){
-                statement = c.createStatement();
-                statement.executeUpdate(sql);
-                statement.close();
-                this.c.close();
-            }
+            statement = c.createStatement();
+            statement.executeUpdate(sql);
+            statement.close();
+            this.c.close();
         } catch (SQLException e) {
             Logger logger = Logger.getSingleton();
             logger.write(e.getMessage());

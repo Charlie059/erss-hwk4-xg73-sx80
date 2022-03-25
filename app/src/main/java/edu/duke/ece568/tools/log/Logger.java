@@ -13,7 +13,7 @@ public class Logger {
     private Logger(){
         this.logger = java.util.logging.Logger.getLogger("ServerLog");
         try {
-            this.fh = new FileHandler("../server.log");
+            this.fh = new FileHandler("server.log");
             this.logger.addHandler(fh);
             SimpleFormatter formatter = new SimpleFormatter();
             this.fh.setFormatter(formatter);

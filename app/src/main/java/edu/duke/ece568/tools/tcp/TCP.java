@@ -1,6 +1,8 @@
 package edu.duke.ece568.tools.tcp;
 
+import javax.net.ServerSocketFactory;
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -11,7 +13,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class TCP {
     private final int portNum;
-    private final ServerSocket serversocket;
+    private final ServerSocket serverSocket;
 
     /**
      * Constructor of TCP
@@ -20,7 +22,9 @@ public class TCP {
      */
     public TCP(int portNum) throws IOException {
         this.portNum = portNum;
-        this.serversocket = new ServerSocket(this.portNum);
+//        this.serversocket = new ServerSocket(new InetSocketAddress("0.0.0.0",portNum));
+        this.serverSocket = ServerSocketFactory.getDefault().createServerSocket();
+        this.serverSocket.bind(new InetSocketAddress("0.0.0.0", portNum));
     }
 
     /**
@@ -29,7 +33,7 @@ public class TCP {
      * @throws IOException
      */
     public Socket acceptClient() throws IOException {
-        return this.serversocket.accept();
+        return this.serverSocket.accept();
     }
 
     /**

@@ -1,34 +1,14 @@
 package edu.duke.ece568;
 
 import edu.duke.ece568.tools.database.PostgreSQLJDBC;
+import edu.duke.ece568.tools.log.Logger;
 import edu.duke.ece568.tools.tcp.TCP;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.logging.FileHandler;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 public class Server {
-    private Logger logger;
-    private FileHandler fh;
     private TCP tcp;
-    private PostgreSQLJDBC postgreSQLJDBC;
-
-    /**
-     * init logger
-     */
-    private void initLogger(){
-        this.logger = Logger.getLogger("ServerLog");
-        try {
-            this.fh = new FileHandler("server.log");
-            this.logger.addHandler(fh);
-            SimpleFormatter formatter = new SimpleFormatter();
-            this.fh.setFormatter(formatter);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     /**
      * Constructor of Server
@@ -37,13 +17,11 @@ public class Server {
      * @param portNum
      */
     public Server(int portNum){
-        // init logger
-        initLogger();
         try {
             this.tcp = new TCP(portNum);
-            this.postgreSQLJDBC = PostgreSQLJDBC.getInstance();
+            PostgreSQLJDBC.getInstance();
         } catch (IOException e) {
-            this.logger.info("Cannot build TCP connection.");
+            Logger.getSingleton().write("Cannot build TCP connection.");
         }
     }
 
@@ -58,8 +36,10 @@ public class Server {
             while (true) {
                 // accept tcp connection
                 Socket client = server.tcp.acceptClient();
+
                 // log the message
-                server.logger.info("Connect: " + client.getInetAddress().getHostAddress());
+                Logger.getSingleton().write("Connect: " + client.getInetAddress().getHostAddress());
+
                 // create a new thread object
                 ClientHandler clientSock = new ClientHandler(client);
                 new Thread(clientSock).start();

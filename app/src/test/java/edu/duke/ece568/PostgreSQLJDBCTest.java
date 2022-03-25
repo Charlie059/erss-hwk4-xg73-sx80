@@ -7,6 +7,6 @@ class PostgreSQLJDBCTest {
 
     @Test
     void getInstance() {
-        PostgreSQLJDBC postgreSQLJDBC = PostgreSQLJDBC.getInstance();
+//        PostgreSQLJDBC postgreSQLJDBC = PostgreSQLJDBC.getInstance();
     }
 }

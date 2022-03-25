@@ -2,10 +2,7 @@ package edu.duke.ece568.tools.database;
 
 import edu.duke.ece568.tools.log.Logger;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 
 public class PostgreSQLJDBC {
@@ -50,15 +47,54 @@ public class PostgreSQLJDBC {
         }
     }
 
+    private ResultSet runQuerySQL(String sql){
+        Statement statement;
+        try {
+            this.c = connectDB();
+            ResultSet rs = null;
+            statement = c.createStatement();
+            rs = statement.executeQuery(sql);
+            statement.close();
+            this.c.close();
+            return rs;
+        } catch (SQLException e) {
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+            return null;
+        }
+    }
+
+    private boolean checkInsertAccount(int insertingAccountId) throws SQLException {
+        String queryInsertAccount = "Select * From accounts Where Account_id="+ insertingAccountId+ ";";
+        ResultSet result = runQuerySQL(queryInsertAccount);
+        return !result.next();
+    }
+
+
     /**
      * Insert Account to DB
      * @param accountID
      * @param balance
      * @return true for success
      */
-    public boolean insertAccount(int accountID, double balance){
+    public String insertAccount(int accountID, double balance){
+        boolean insertPermission = false;
+        try{
+            insertPermission = checkInsertAccount(accountID);
+
+        }catch (SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+        }
+        if (insertPermission == false){
+            return "You can not create account "+accountID+" because it exists!";
+        }
         String insertSQL = "INSERT INTO accounts (account_id, balance) VALUES" +  "(" + accountID +"," + balance + ");";
-        return runSQL(insertSQL);
+        boolean createSuccess = runSQL(insertSQL);
+        if (createSuccess == true){
+            return "You have successfully create the account "+ accountID;
+        }
+        return "The execution of Create SQL has error!";
     }
 
 

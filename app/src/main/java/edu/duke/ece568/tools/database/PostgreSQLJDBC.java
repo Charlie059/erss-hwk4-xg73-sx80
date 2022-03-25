@@ -18,7 +18,6 @@ public class PostgreSQLJDBC {
      * @return the instance
      */
     public static PostgreSQLJDBC getInstance() {
-        System.out.println("DB getInstance");
         if (postgreSQLJDBC == null) postgreSQLJDBC = new PostgreSQLJDBC();
         return postgreSQLJDBC;
     }
@@ -27,7 +26,6 @@ public class PostgreSQLJDBC {
      * Construct of PostgreSQLJDBC which clear the tables and build the tables
      */
     private PostgreSQLJDBC(){
-        System.out.println("Construct DB");
         // clear table if exist
         this.clearTables();
         // build table
@@ -43,8 +41,6 @@ public class PostgreSQLJDBC {
             Class.forName("org.postgresql.Driver");
             c = DriverManager.getConnection("jdbc:postgresql://database:5432/postgres",
                             "postgres", "postgres");
-            Logger logger = Logger.getSingleton();
-            System.out.println("Connect to DB");
             return c;
         } catch (SQLException | ClassNotFoundException e) {
             Logger logger = Logger.getSingleton();

@@ -39,7 +39,8 @@ public class PostgreSQLJDBC {
         Connection c;
         try {
             Class.forName("org.postgresql.Driver");
-            c = DriverManager.getConnection("jdbc:postgresql://database:5432/postgres",
+            // TODO use environment var: change to database when in use
+            c = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres",
                             "postgres", "postgres");
             return c;
         } catch (SQLException | ClassNotFoundException e) {
@@ -50,10 +51,49 @@ public class PostgreSQLJDBC {
     }
 
     /**
+     * Insert Account to DB
+     * @param accountID
+     * @param balance
+     * @return true for success
+     */
+    public boolean insertAccount(int accountID, double balance){
+        String insertSQL = "INSERT INTO accounts (account_id, balance) VALUES" +  "(" + accountID +"," + balance + ");";
+        return runSQL(insertSQL);
+    }
+
+
+    /**
+     * Insert Order to DB
+     * @param trans_id
+     * @param account_id
+     * @param symbol
+     * @param amount
+     * @param limit_price
+     * @return true for success
+     */
+    public boolean insertOrder(int trans_id, int account_id, String symbol, double amount, double limit_price){
+        String insertSQL = "INSERT INTO orders (trans_id, account_id, symbol, amount, limit_price) VALUES ("+ trans_id +","+ account_id +"," + "'" + symbol + "'" + "," +  amount + "," + limit_price + ");";
+        return runSQL(insertSQL);
+    }
+
+    /**
+     * Insert Position
+     * @param symbol
+     * @param amount
+     * @param account_id
+     * @return true for success
+     */
+    public boolean insertPosition(String symbol, double amount, int account_id){
+        String insertSQL = "INSERT INTO positions (symbol, amount, account_id) VALUES (" + "'" + symbol + "'" + "," + amount + ","+ account_id + ");";
+        return runSQL(insertSQL);
+    }
+
+
+    /**
      * Run SQL statement
      * @param sql indicated string
      */
-    private void runSQL(String sql){
+    private boolean runSQL(String sql){
         Statement statement;
         try {
             this.c = connectDB();
@@ -61,9 +101,11 @@ public class PostgreSQLJDBC {
             statement.executeUpdate(sql);
             statement.close();
             this.c.close();
+            return true;
         } catch (SQLException e) {
             Logger logger = Logger.getSingleton();
             logger.write(e.getMessage());
+            return false;
         }
     }
 

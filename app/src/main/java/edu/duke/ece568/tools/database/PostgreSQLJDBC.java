@@ -10,6 +10,7 @@ public class PostgreSQLJDBC {
     private static PostgreSQLJDBC postgreSQLJDBC;
     private Connection c = null;
 
+    private int tran_id = 1;
     /**
      * Get the instance of PostgreSQLJDBC
      * @return the instance
@@ -64,8 +65,14 @@ public class PostgreSQLJDBC {
         }
     }
 
-    private boolean checkInsertAccount(int insertingAccountId) throws SQLException {
-        String queryInsertAccount = "Select * From accounts Where Account_id="+ insertingAccountId+ ";";
+    /**
+     * if no such account, return true, else, return false
+     * @param insertingAccountId
+     * @return
+     * @throws SQLException
+     */
+    private boolean checkCreateAccount(int insertingAccountId) throws SQLException {
+        String queryInsertAccount = "SELECT * FROM accounts WHERE Account_id="+ insertingAccountId+ ";";
         ResultSet result = runQuerySQL(queryInsertAccount);
         return !result.next();
     }
@@ -77,16 +84,16 @@ public class PostgreSQLJDBC {
      * @param balance
      * @return true for success
      */
-    public String insertAccount(int accountID, double balance){
-        boolean insertPermission = false;
+    public String createAccount(int accountID, double balance){
+        boolean createPermission = false;//if true, create; else, not create
         try{
-            insertPermission = checkInsertAccount(accountID);
+            createPermission = checkCreateAccount(accountID);
 
         }catch (SQLException e){
             Logger logger = Logger.getSingleton();
             logger.write(e.getMessage());
         }
-        if (insertPermission == false){
+        if (createPermission == false){
             return "You can not create account "+accountID+" because it exists!";
         }
         String insertSQL = "INSERT INTO accounts (account_id, balance) VALUES" +  "(" + accountID +"," + balance + ");";
@@ -94,7 +101,7 @@ public class PostgreSQLJDBC {
         if (createSuccess == true){
             return "You have successfully create the account "+ accountID;
         }
-        return "The execution of Create SQL has error!";
+        return "The execution of runSQL has error!";
     }
 
 
@@ -112,6 +119,183 @@ public class PostgreSQLJDBC {
         return runSQL(insertSQL);
     }
 
+
+    /**
+     * check the account is existing, true is existing, false otherwise
+     * @param account_id
+     * @return
+     */
+    private boolean checkAccountAvailable(int account_id){
+        try {
+            boolean createPermission = checkCreateAccount(account_id);
+            if (createPermission == false){
+                return true;
+            }
+
+        }catch (SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+        }
+        return false;
+    }
+
+
+
+    private String getMoneyOutOfBalanceForBuyer(int account_id, double amount, double limit_price) throws SQLException {
+        String getCurrentBalanceSQL = "SELECT * FROM accounts WHERE account_id="+account_id+";";
+        ResultSet result = runQuerySQL(getCurrentBalanceSQL);
+        result.next();
+        double originalBalance = result.getDouble("Balance");
+        double newBalance = originalBalance - amount*limit_price;
+        if (newBalance < 0){
+            return "The buyer can not make this order because not enough balance";
+        }
+        String changeAccountBalanceSQL = "UPDATE accounts SET balance="+ newBalance + " WHERE account_id=" + account_id +";";
+        boolean runSuccess = runSQL(changeAccountBalanceSQL);
+        if (runSuccess == true){
+            return null;
+        }
+        else{
+            return "The execution of runSQL has error!";
+        }
+
+    }
+
+    private String getPositionOutForSeller(int account_id, String symbol, double amount) throws SQLException {
+        String getCurrentPositionSQL = "SELECT * FROM positions WHERE symbol="+ symbol + " AND account_id=" +account_id + ";";
+        ResultSet result = runQuerySQL(getCurrentPositionSQL);
+        result.next();
+        double originalAmount = result.getDouble("Amount");
+        double newAmount = originalAmount - amount;
+        if (amount > originalAmount){
+            return "The seller can not make this order because not enough symbol";
+        }
+        String changePositionAmountSQL = "UPDATE positions SET amount=" + newAmount + "WHERE symbol="+ symbol + " AND account_id=" +account_id + ";";
+        boolean runSuccess = runSQL(changePositionAmountSQL);
+        if (runSuccess == true){
+            return null;
+        }
+        else{
+            return "The execution of runSQL has error!";
+        }
+    }
+
+
+    private ResultSet searchMatchingOrder(String symbol, double amount, double limit_price) throws SQLException {
+        String theOpposite = null;
+        String theExtremeSQL = null;
+        if (amount>0){
+            theOpposite = "SELECT limit_price FROM orders WHERE status='OPEN' AND amount<0 AND limit_price<=" + limit_price + " AND symbol="+"'"+symbol+"'";
+            theExtremeSQL = "SELECT * FROM orders WHERE status='OPEN' AND amount<0 AND limit_price<=" + limit_price + " AND symbol="+"'"+symbol+"'"+" AND limit_price<=ALL(" + theOpposite +")"+";";
+        }
+        else{
+            theOpposite = "SELECT limit_price FROM orders WHERE status='OPEN' AND amount>0 AND limit_price>=" + limit_price + " AND symbol="+"'"+symbol+"'";
+            theExtremeSQL = "SELECT * FROM orders WHERE status='OPEN' AND amount>0 AND limit_price>=" + limit_price + " AND symbol="+"'"+symbol+"'"+" AND limit_price>=ALL(" + theOpposite +")"+";";
+        }
+        ResultSet result = runQuerySQL(theExtremeSQL);
+
+        if (result.next()){
+            return result;
+        }
+        return null;
+    }
+
+    private boolean executeMatchingOrder(ResultSet result, double amount) {
+        try {
+            double matchingAmount = result.getDouble("Amount");
+            if (matchingAmount + amount == 0){
+                //change status from 'open' to 'executed'
+            }
+            else if (matchingAmount + amount > 0 && amount > 0){
+                //update amount and go next check and change matching's status from 'open' to 'executed' and
+                //split matching(check if there has been splitted)
+            }
+            else{
+                //change amount's status from 'open' to 'executed' and split matching(check if there has been splitted)
+
+            }
+        }catch (SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+        }
+        return false;
+    }
+
+    public String processTransactionOrder(int account_id, String symbol, double amount, double limit_price){
+        //check account_id is available
+        Logger logger = Logger.getSingleton();
+        if (checkAccountAvailable(account_id) == false){
+            return "This account "+ account_id + " does not exist, so this order is an error";
+        }
+        //the account is available, add this order to Orders
+        if(insertOrder(tran_id, account_id, symbol, amount, limit_price)){
+            tran_id++;
+        }
+        else{
+            return "The execution of runSQL has error!";
+        }
+        //amount > 0, it is a buy order
+        if (amount > 0){
+            //get the money out of buyer's balance(modify Table Accounts)
+            try {
+                String getMoneyOutOfBalanceForBuyerResult = getMoneyOutOfBalanceForBuyer(account_id, amount, limit_price);
+                if (getMoneyOutOfBalanceForBuyerResult != null) {
+                    return getMoneyOutOfBalanceForBuyerResult;
+                }
+            }catch (SQLException e){
+                logger.write(e.getMessage());
+            }
+            while(amount > 0){
+                //search for the matching sell order
+                ResultSet result = null;
+                try {
+                    result = searchMatchingOrder(symbol, amount, limit_price);
+                }catch (SQLException e){
+                    logger.write(e.getMessage());
+                }
+                if (result == null){
+                    break;
+                }
+
+            }
+
+            //double newBalance =
+            //String getMoneySQL = "UPDATE accounts SET balance=" + updatedAmount + "WHERE Account_id=" + account_id +" AND Symbol=" + "'"+symbol+"'" + ";";
+        }
+        else if (amount < 0){
+            //get the position out of seller's positions(modify Table Positions)
+            try {
+                String getPositionOutForSellerResult = getPositionOutForSeller(account_id, symbol, amount);
+                if (getPositionOutForSellerResult != null){
+                    return getPositionOutForSellerResult;
+                }
+            }catch (SQLException e){
+                logger.write(e.getMessage());
+            }
+        }
+        return null;
+    }
+
+
+
+    public String processTransactionCancel(String symbol, double amount, double limit_price){
+
+        return null;
+    }
+
+
+
+    public String processTransactionQuery(String symbol, double amount, double limit_price){
+
+        return null;
+    }
+
+
+    private boolean checkCreatePosition(String insertingSymbol, double insertingAmount, int insertingAccountId) throws SQLException {
+        String queryInsertAccount = "SELECT * FROM positions WHERE symbol="+ insertingSymbol + " AND account_id=" +insertingAccountId + ";";
+        ResultSet result = runQuerySQL(queryInsertAccount);
+        return !result.next();
+    }
     /**
      * Insert Position
      * @param symbol
@@ -119,9 +303,34 @@ public class PostgreSQLJDBC {
      * @param account_id
      * @return true for success
      */
-    public boolean insertPosition(String symbol, double amount, int account_id){
-        String insertSQL = "INSERT INTO positions (symbol, amount, account_id) VALUES (" + "'" + symbol + "'" + "," + amount + ","+ account_id + ");";
-        return runSQL(insertSQL);
+    public String createPosition(String symbol, double amount, int account_id){
+        boolean createPermission = false;//if true, create; else, modify
+        Logger logger = Logger.getSingleton();
+        ResultSet result = null;
+        String insertSQL = null;
+        try{
+            createPermission = checkCreatePosition(symbol, amount, account_id);
+            String queryInsertAccount = "SELECT * FROM positions WHERE symbol="+ "'"+ symbol + "'" + " AND account_id=" +account_id + ";";
+            result = runQuerySQL(queryInsertAccount);
+            if (createPermission == false){
+                //symbol in account exists with account, need update
+                result.next();
+                logger.write("symbol exists, we should modify the num in it");
+                double updatedAmount = result.getDouble("Amount") + amount;
+                insertSQL = "UPDATE positions SET amount=" + updatedAmount + " WHERE Account_id=" + account_id +" AND Symbol=" + "'"+symbol+"'" + ";";
+            }
+        }catch (SQLException e){
+            logger.write(e.getMessage());
+        }
+        //symbol in account does not exist, need create
+        if (createPermission == true) {
+            insertSQL = "INSERT INTO positions (symbol, amount, account_id) VALUES (" + "'" + symbol + "'" + "," + amount + "," + account_id + ");";
+        }
+        boolean createSuccess = runSQL(insertSQL);
+        if (createSuccess == true){
+            return "You have successfully create the symbol "+ symbol + "and it is in account" + account_id;
+        }
+        return "The execution of Create SQL has error!";
     }
 
 

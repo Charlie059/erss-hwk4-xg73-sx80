@@ -114,8 +114,8 @@ public class PostgreSQLJDBC {
      * @param limit_price
      * @return true for success
      */
-    public boolean insertOrder(int trans_id, int account_id, String symbol, double amount, double limit_price){
-        String insertSQL = "INSERT INTO orders (trans_id, account_id, symbol, amount, limit_price) VALUES ("+ trans_id +","+ account_id +"," + "'" + symbol + "'" + "," +  amount + "," + limit_price + ");";
+    public boolean insertOrder(int trans_id, int account_id, String symbol, double amount, double limit_price, String status){
+        String insertSQL = "INSERT INTO orders (trans_id, account_id, symbol, amount, limit_price, status) VALUES ("+ trans_id +","+ account_id +"," + "'" + symbol + "'" + "," +  amount + "," + limit_price +"," + "'" + status + "'"+");";
         return runSQL(insertSQL);
     }
 
@@ -161,6 +161,14 @@ public class PostgreSQLJDBC {
 
     }
 
+    /**
+     * if amount == 0, this position no longer belongs to this account;
+     * @param account_id
+     * @param symbol
+     * @param amount
+     * @return
+     * @throws SQLException
+     */
     private String getPositionOutForSeller(int account_id, String symbol, double amount) throws SQLException {
         String getCurrentPositionSQL = "SELECT * FROM positions WHERE symbol="+ symbol + " AND account_id=" +account_id + ";";
         ResultSet result = runQuerySQL(getCurrentPositionSQL);
@@ -200,25 +208,111 @@ public class PostgreSQLJDBC {
         return null;
     }
 
-    private boolean executeMatchingOrder(ResultSet result, double amount) {
-        try {
-            double matchingAmount = result.getDouble("Amount");
-            if (matchingAmount + amount == 0){
-                //change status from 'open' to 'executed'
-            }
-            else if (matchingAmount + amount > 0 && amount > 0){
-                //update amount and go next check and change matching's status from 'open' to 'executed' and
-                //split matching(check if there has been splitted)
-            }
-            else{
-                //change amount's status from 'open' to 'executed' and split matching(check if there has been splitted)
 
-            }
+    private double getCurrentBalance(int account_id){
+        String getCurrentBalance = "SELECT * FROM accounts WHERE account_id="+account_id+";";
+        ResultSet result = runQuerySQL(getCurrentBalance);
+        double currBalance = -1;
+        try {
+            result.next();
+            currBalance = result.getDouble("balance");
         }catch (SQLException e){
             Logger logger = Logger.getSingleton();
             logger.write(e.getMessage());
         }
-        return false;
+        return currBalance;
+    }
+
+    /**
+     * something goes wrong, return false; else, true
+     * buyer get return balance and position
+     * seller get balance and lose position
+     * @param account_id
+     * @param returnBalance
+     * @return
+     */
+    private boolean paybackBalance(int account_id, double returnBalance){
+        double currBalance = getCurrentBalance(account_id);
+        if (currBalance == -1){
+            return false;
+        }
+        double newBalance = currBalance+returnBalance;
+        String returnBalanceSQL = "UPDATE accounts SET balance="+newBalance+" WHERE account_id="+account_id+";";
+        runSQL(returnBalanceSQL);
+        return true;
+    }
+
+
+
+
+    /**
+     * return the updated amount
+     * @param result
+     * @param amount
+     * @return
+     */
+    private double executeMatchingOrder(ResultSet result, double amount, int AmountTran_Id, int Amountaccount_id, String Amountsymbol, double AmountLimit_price) {
+        int AmountorderId = getOrderID(AmountTran_Id);
+        try {
+            double matchingAmount = result.getDouble("Amount");
+            double executed_price = result.getDouble("Limit_price");
+            if (matchingAmount + amount == 0){
+                //change status from 'open' to 'executed'
+                int order_id = result.getInt("Order_id");
+                String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+order_id+";";
+                String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+AmountorderId+";";
+                runSQL(updateStatusForMatchingSQL);
+                runSQL(updateStatusForAmountSQL);
+                return 0;
+            }
+            else if ((matchingAmount + amount > 0 && amount > 0) || (matchingAmount + amount < 0 && amount < 0)){
+                //update amount and go next check and change matching's status from 'open' to 'executed' and
+                //split amount(check if there has been splitted)
+                int order_id = result.getInt("Order_id");
+                String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+order_id+";";
+                insertOrder(AmountTran_Id, Amountaccount_id, Amountsymbol, -matchingAmount, AmountLimit_price, "EXECUTED");
+                double newAmount = matchingAmount + amount;
+                String updateAmountForAmountSQL = "UPDATE orders SET amount="+newAmount+" WHERE order_id="+AmountorderId+";";
+                runSQL(updateStatusForMatchingSQL);
+                runSQL(updateAmountForAmountSQL);
+                return newAmount;
+            }
+            else if((matchingAmount + amount < 0 && amount > 0) || (matchingAmount + amount > 0 && amount < 0)){
+                //change amount's status from 'open' to 'executed' and split matching(check if there has been splitted)
+                String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+AmountorderId+";";
+                int order_id = result.getInt("Order_id");
+                int tran_id = result.getInt("Trans_id");
+                int account_id = result.getInt("Account_id");
+                double limit_price = result.getDouble("Limit_price");
+                insertOrder(tran_id, account_id, Amountsymbol, -amount, limit_price, "EXECUTED");
+                double newMatchingAmount = matchingAmount + amount;
+                String updateAmountForMatchingSQL = "UPDATE orders SET amount="+newMatchingAmount+" WHERE order_id="+order_id+";";
+                runSQL(updateAmountForMatchingSQL);
+                runSQL(updateStatusForAmountSQL);
+                return 0;
+            }
+
+        }catch (SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+        }
+        //TODO: check this
+        return 0;
+    }
+
+    private int getOrderID(int tranID) {
+        String getOrderIDSQL = "SELECT order_ID FROM orders WHERE trans_id="+tranID+" AND status=" + "'OPEN'" + ";";
+        ResultSet result = runQuerySQL(getOrderIDSQL);
+        int order_id = -1;
+        try{
+            result.next();
+            order_id = result.getInt("order_id");
+        }catch (SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+        }
+
+        return order_id;
     }
 
     public String processTransactionOrder(int account_id, String symbol, double amount, double limit_price){
@@ -228,12 +322,13 @@ public class PostgreSQLJDBC {
             return "This account "+ account_id + " does not exist, so this order is an error";
         }
         //the account is available, add this order to Orders
-        if(insertOrder(tran_id, account_id, symbol, amount, limit_price)){
+        if(insertOrder(tran_id, account_id, symbol, amount, limit_price, "OPEN")){
             tran_id++;
         }
         else{
             return "The execution of runSQL has error!";
         }
+        //TODO: what if amount == 0
         //amount > 0, it is a buy order
         if (amount > 0){
             //get the money out of buyer's balance(modify Table Accounts)
@@ -257,12 +352,14 @@ public class PostgreSQLJDBC {
                     break;
                 }
 
+                double updatedAmount = executeMatchingOrder(result, amount,  tran_id-1, account_id, symbol, limit_price);
+                amount = updatedAmount;
             }
 
             //double newBalance =
             //String getMoneySQL = "UPDATE accounts SET balance=" + updatedAmount + "WHERE Account_id=" + account_id +" AND Symbol=" + "'"+symbol+"'" + ";";
         }
-        else if (amount < 0){
+        else {
             //get the position out of seller's positions(modify Table Positions)
             try {
                 String getPositionOutForSellerResult = getPositionOutForSeller(account_id, symbol, amount);
@@ -271,6 +368,21 @@ public class PostgreSQLJDBC {
                 }
             }catch (SQLException e){
                 logger.write(e.getMessage());
+            }
+            while(amount < 0){
+                //search for the matching sell order
+                ResultSet result = null;
+                try {
+                    result = searchMatchingOrder(symbol, amount, limit_price);
+                }catch (SQLException e){
+                    logger.write(e.getMessage());
+                }
+                if (result == null){
+                    break;
+                }
+
+                double updatedAmount = executeMatchingOrder(result, amount,  tran_id-1, account_id, symbol, limit_price);
+                amount = updatedAmount;
             }
         }
         return null;

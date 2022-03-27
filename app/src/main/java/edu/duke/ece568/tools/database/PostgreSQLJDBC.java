@@ -242,8 +242,28 @@ public class PostgreSQLJDBC {
         return true;
     }
 
+    private boolean getPositionForBuyer(String symbol, double amount, int account_id){
+        String message = createPosition(symbol, amount, account_id);
+        String expected = "You have successfully create the symbol "+ symbol + "and it is in account" + account_id;
+        if(message == expected){
+            return true;
+        }
+        return false;
+    }
+
+    private boolean getBalanceForSeller(int account_id, double addBalance){
+        boolean executed = paybackBalance(account_id, addBalance);
+        return executed;
+    }
 
 
+    private void executeReturnBalanceAndPosition(double buyerLimit, double executedLimit, double executedAmount, int buyerAccountId, int sellerAccountId, String symbol){
+        double returnBalance = (buyerLimit- executedLimit)*executedAmount;
+        paybackBalance(buyerAccountId, returnBalance);
+        getPositionForBuyer(symbol, executedAmount, buyerAccountId);
+        double getBalance = executedLimit * executedAmount;
+        getBalanceForSeller(sellerAccountId, getBalance);
+    }
 
     /**
      * return the updated amount
@@ -252,50 +272,83 @@ public class PostgreSQLJDBC {
      * @return
      */
     private double executeMatchingOrder(ResultSet result, double amount, int AmountTran_Id, int Amountaccount_id, String Amountsymbol, double AmountLimit_price) {
+        Logger logger = Logger.getSingleton();
         int AmountorderId = getOrderID(AmountTran_Id);
+        double executed_price = 0;
+        double executed_amount= 0;
+        int order_id = 0;
+        int tran_id = 0;
+        int account_id = 0;
+        double limit_price = 0;
+        try {
+            order_id = result.getInt("Order_id");
+            tran_id = result.getInt("Trans_id");
+            account_id = result.getInt("Account_id");
+            limit_price = result.getDouble("Limit_price");
+        }catch (SQLException e){
+            logger.write(e.getMessage());
+        }
         try {
             double matchingAmount = result.getDouble("Amount");
-            double executed_price = result.getDouble("Limit_price");
+            executed_price = result.getDouble("Limit_price");
             if (matchingAmount + amount == 0){
                 //change status from 'open' to 'executed'
-                int order_id = result.getInt("Order_id");
                 String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+order_id+";";
                 String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+AmountorderId+";";
                 runSQL(updateStatusForMatchingSQL);
                 runSQL(updateStatusForAmountSQL);
+                executed_amount = Math.abs(amount);
+                if (amount > 0){
+                    executeReturnBalanceAndPosition(AmountLimit_price, limit_price, executed_amount, Amountaccount_id, account_id, Amountsymbol);
+                }
+                else{
+                    executeReturnBalanceAndPosition(limit_price, AmountLimit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
+                }
                 return 0;
             }
             else if ((matchingAmount + amount > 0 && amount > 0) || (matchingAmount + amount < 0 && amount < 0)){
                 //update amount and go next check and change matching's status from 'open' to 'executed' and
                 //split amount(check if there has been splitted)
-                int order_id = result.getInt("Order_id");
+
                 String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+order_id+";";
                 insertOrder(AmountTran_Id, Amountaccount_id, Amountsymbol, -matchingAmount, AmountLimit_price, "EXECUTED");
                 double newAmount = matchingAmount + amount;
                 String updateAmountForAmountSQL = "UPDATE orders SET amount="+newAmount+" WHERE order_id="+AmountorderId+";";
                 runSQL(updateStatusForMatchingSQL);
                 runSQL(updateAmountForAmountSQL);
+                executed_amount = Math.abs(matchingAmount);
+                if (amount > 0){
+                    executeReturnBalanceAndPosition(AmountLimit_price, limit_price, executed_amount, Amountaccount_id, account_id, Amountsymbol);
+                }
+                else{
+                    executeReturnBalanceAndPosition(limit_price, AmountLimit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
+                }
                 return newAmount;
             }
             else if((matchingAmount + amount < 0 && amount > 0) || (matchingAmount + amount > 0 && amount < 0)){
                 //change amount's status from 'open' to 'executed' and split matching(check if there has been splitted)
                 String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+AmountorderId+";";
-                int order_id = result.getInt("Order_id");
-                int tran_id = result.getInt("Trans_id");
-                int account_id = result.getInt("Account_id");
-                double limit_price = result.getDouble("Limit_price");
+
                 insertOrder(tran_id, account_id, Amountsymbol, -amount, limit_price, "EXECUTED");
                 double newMatchingAmount = matchingAmount + amount;
                 String updateAmountForMatchingSQL = "UPDATE orders SET amount="+newMatchingAmount+" WHERE order_id="+order_id+";";
                 runSQL(updateAmountForMatchingSQL);
                 runSQL(updateStatusForAmountSQL);
+                executed_amount = Math.abs(amount);
+                if (amount > 0){
+                    executeReturnBalanceAndPosition(AmountLimit_price, limit_price, executed_amount, Amountaccount_id, account_id, Amountsymbol);
+                }
+                else{
+                    executeReturnBalanceAndPosition(limit_price, AmountLimit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
+                }
                 return 0;
             }
 
         }catch (SQLException e){
-            Logger logger = Logger.getSingleton();
             logger.write(e.getMessage());
         }
+        //TODO: return balance and add position
+
         //TODO: check this
         return 0;
     }
@@ -388,18 +441,56 @@ public class PostgreSQLJDBC {
         return null;
     }
 
+    private ResultSet getCancelledOrder(int trans_id){
+        String getCancelledSQL = "SELECT * FROM orders WHERE trans_id="+trans_id+ " AND status=" + "'OPEN'"+ ";";
+        ResultSet result = runQuerySQL(getCancelledSQL);
+        try{
+            result.next();
+        }catch (SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+        }
+        return result;
+    }
 
+    public String processTransactionCancel(int account_id, int trans_id){
+        //change status from OPEN to CANCELLED
+        Logger logger = Logger.getSingleton();
+        ResultSet result = getCancelledOrder(trans_id);
+        String changeStatusSQL = "UPDATE orders SET status='CANCELLED' WHERE trans_id="+trans_id+ " AND status=" + "'OPEN'"+ ";";
+        runSQL(changeStatusSQL);
+        //give back the Position or Balance
+        double amount = 0;
+        String symbol = null;
+        double limit_price = 0;
+        try {
+            amount = result.getDouble("Amount");
+            symbol = result.getString("Symbol");
+            limit_price = result.getDouble("Limit_price");
+        }catch (SQLException e){
 
-    public String processTransactionCancel(String symbol, double amount, double limit_price){
+            logger.write(e.getMessage());
+        }
+        if(amount > 0){
+            try {
+                getMoneyOutOfBalanceForBuyer(account_id, amount, -limit_price);
+            }catch (SQLException e){
+                logger.write(e.getMessage());
+            }
 
+        }
+        else if (amount < 0){
+            createPosition(symbol, -amount, account_id);
+        }
         return null;
     }
 
 
 
-    public String processTransactionQuery(String symbol, double amount, double limit_price){
-
-        return null;
+    public ResultSet processTransactionQuery(int account_id, int trans_id){
+        String querySQL = "SELECT * FROM orders WHERE trans_id="+trans_id;
+        ResultSet result = runQuerySQL(querySQL);
+        return result;
     }
 
 

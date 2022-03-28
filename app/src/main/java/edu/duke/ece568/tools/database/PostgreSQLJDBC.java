@@ -426,7 +426,7 @@ public class PostgreSQLJDBC {
             account_id = result.getInt("account_id");
             matchingAmount = result.getDouble("amount");
             limit_price = result.getDouble("limit_price");
-        }catch (SQLException e){ Logger.getSingleton().write(e.getMessage()); return 0;} // TODO return 0?
+        }catch (SQLException e){Logger.getSingleton().write(e.getMessage()); return 0;} // TODO return 0?
 
         // Execute order
         // If potential matched amount is perfectly match to current order's amount
@@ -443,13 +443,15 @@ public class PostgreSQLJDBC {
 
             //TODO two method can be merge and which price is execute price?
             // If is a buy order
-//            if (amount > 0) executeReturnBalanceAndPosition(AmountLimit_price, limit_price, executed_amount, Amountaccount_id, account_id, Amountsymbol);
+            if (amount > 0) executeReturnBalanceAndPosition(AmountLimit_price, limit_price, executed_amount, Amountaccount_id, account_id, Amountsymbol);
 //            // If is a selling order
-//            else executeReturnBalanceAndPosition(limit_price, AmountLimit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
+            else executeReturnBalanceAndPosition(limit_price, limit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
             return 0;
         }
 
         //TODO have not check these condition
+
+        // After exe the new inserted order, there is still amount left and con-not be executed
         else if ((matchingAmount + amount > 0 && amount > 0) || (matchingAmount + amount < 0 && amount < 0)){
             //update amount and go next check and change matching's status from 'open' to 'executed' and
             //split amount(check if there has been splitted)
@@ -465,7 +467,7 @@ public class PostgreSQLJDBC {
                 executeReturnBalanceAndPosition(AmountLimit_price, limit_price, executed_amount, Amountaccount_id, account_id, Amountsymbol);
             }
             else{
-                executeReturnBalanceAndPosition(limit_price, AmountLimit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
+                executeReturnBalanceAndPosition(limit_price, limit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
             }
             return newAmount;
         }
@@ -483,7 +485,7 @@ public class PostgreSQLJDBC {
                 executeReturnBalanceAndPosition(AmountLimit_price, limit_price, executed_amount, Amountaccount_id, account_id, Amountsymbol);
             }
             else{
-                executeReturnBalanceAndPosition(limit_price, AmountLimit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
+                executeReturnBalanceAndPosition(limit_price, limit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
             }
             return 0;
         }
@@ -555,12 +557,10 @@ public class PostgreSQLJDBC {
                 else if((int)Math.signum(amount) * (int)Math.signum(amount_temp) == -1) break; // break if the amount is reverted from temp
                 else{
                     // Execute matching orders
-                    amount = executeMatchingOrder(result, amount, tran_id, account_id, symbol, limit_price);;
+                    amount = executeMatchingOrder(result, amount, tran_id, account_id, symbol, limit_price);
                 }
             }
 
-            // Finish execution, update buyer and seller account
-            //String getMoneySQL = "UPDATE accounts SET balance=" + updatedAmount + "WHERE Account_id=" + account_id +" AND Symbol=" + "'"+symbol+"'" + ";";
         }
         return null;
     }
@@ -594,7 +594,6 @@ public class PostgreSQLJDBC {
             symbol = result.getString("Symbol");
             limit_price = result.getDouble("Limit_price");
         }catch (SQLException e){
-
             logger.write(e.getMessage());
         }
         if(amount > 0){

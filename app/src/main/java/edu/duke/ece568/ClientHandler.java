@@ -23,9 +23,14 @@ public class ClientHandler implements Runnable {
             logger.write("RECV: "+str);
 
             if (str.equals("a")){
-                PostgreSQLJDBC.getInstance().createAccount(1,2000);
-                PostgreSQLJDBC.getInstance().createPosition("BTC", 100, 1);
+               System.out.println(PostgreSQLJDBC.getInstance().createAccount(1,2000));
+                System.out.println(PostgreSQLJDBC.getInstance().createAccount(2,2000));
+               System.out.println(PostgreSQLJDBC.getInstance().createPosition("BTC", 100, 1));
                 //PostgreSQLJDBC.getInstance().insertOrder(1,1,"BTC",1000,100);
+                PostgreSQLJDBC.getInstance().processTransactionOrder(1,"BTC",-10,1);
+                PostgreSQLJDBC.getInstance().processTransactionOrder(1,"BTC",-20,1);
+                PostgreSQLJDBC.getInstance().processTransactionOrder(2,"BTC",40,2);
+
             }
 
             // Send to Client

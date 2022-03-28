@@ -30,7 +30,7 @@ public class Server {
         // init server
         int portNum = 12345;
         Server server = new Server(portNum);
-
+        PostgreSQLJDBC.getInstance(); // init Database
         try {
             // infinite loop to let thread recv message
             while (true) {

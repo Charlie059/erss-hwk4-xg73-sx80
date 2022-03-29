@@ -2,6 +2,7 @@ package edu.duke.ece568.tools.database;
 
 import edu.duke.ece568.counter.TransactionCounter;
 import edu.duke.ece568.tools.log.Logger;
+import org.checkerframework.checker.units.qual.A;
 
 import java.sql.*;
 
@@ -578,10 +579,30 @@ public class PostgreSQLJDBC {
         return result;
     }
 
+
+
+    private String checkCancelAccount(int account_id, int trans_id){
+        ResultSet result = getCancelledOrder(trans_id);
+        int AccountIdOfOrder = 0;
+        try{
+            AccountIdOfOrder = result.getInt("Account_id");
+        }catch(SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+        }
+        if (AccountIdOfOrder != account_id){
+            return "This account can not cancel a transaction order that does not belong to this account";
+        }
+        return null;
+    }
     //TODO TO BE CHECKED
     public String processTransactionCancel(int account_id, int trans_id){
         //change status from OPEN to CANCELLED
         Logger logger = Logger.getSingleton();
+        String cancelPermission = checkCancelAccount(account_id, trans_id);
+        if(cancelPermission != null){
+            return cancelPermission;
+        }
         ResultSet result = getCancelledOrder(trans_id);
         String changeStatusSQL = "UPDATE orders SET status='CANCELLED' WHERE trans_id="+trans_id+ " AND status=" + "'OPEN'"+ ";";
         runSQLUpdate(changeStatusSQL);
@@ -616,6 +637,17 @@ public class PostgreSQLJDBC {
         String querySQL = "SELECT * FROM orders WHERE trans_id="+trans_id;
         ResultSet result = runSQLQuery(querySQL);
         return result;
+    }
+
+    public void printQueryResult(ResultSet result){
+        try {
+            while (result.next()) {
+                System.out.println("Order_id=" + result.getInt("Order_id") + "   " + "Trans_id=" + result.getInt("Trans_id") + "   " + "Account_id" + result.getInt("Account_id") + "   " + "Symbol=" + result.getString("Symbol") + "   " + "Amount=" + result.getDouble("Amount") + "   " + "Limit_price=" + result.getDouble("Limit_price") + "   " + "Status=" + result.getString("Status"));
+            }
+        }catch (SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+        }
     }
 
 

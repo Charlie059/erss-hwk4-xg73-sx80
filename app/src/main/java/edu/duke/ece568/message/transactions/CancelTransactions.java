@@ -1,5 +1,7 @@
 package edu.duke.ece568.message.transactions;
 
+import edu.duke.ece568.tools.database.PostgreSQLJDBC;
+
 public class CancelTransactions extends Transactions{
     int transactionId;
 

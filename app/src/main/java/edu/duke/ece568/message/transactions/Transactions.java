@@ -5,4 +5,5 @@ import edu.duke.ece568.message.Message;
 public abstract class Transactions implements Message {
     int AccountId;
     //TODO: add field DATABASE
+    public abstract boolean execute();
 }

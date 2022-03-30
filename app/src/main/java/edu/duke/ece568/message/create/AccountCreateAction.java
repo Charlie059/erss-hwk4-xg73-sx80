@@ -1,10 +1,25 @@
 package edu.duke.ece568.message.create;
 
-public class AccountCreateAction extends CreateAction{
-    int balance;
+import edu.duke.ece568.tools.database.PostgreSQLJDBC;
 
-    //TODO: add new element to DATABASE Account
-    void addAccount(){
+public class AccountCreateAction extends CreateAction{
+    double balance;
+
+    public AccountCreateAction(int accountId, double balance){
+        this.accountId = accountId;
+        this.balance = balance;
 
     }
+    //TODO: add new element to DATABASE Account
+    @Override
+    public boolean execute(){
+        String result = PostgreSQLJDBC.getInstance().createAccount(accountId, balance);
+        if (result == "You have successfully create the account "+ accountId){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
 }

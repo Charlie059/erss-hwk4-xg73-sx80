@@ -6,4 +6,16 @@ public class CancelTransactions extends Transactions{
     void changeOrder(){
 
     }
+
+    @Override
+    public boolean execute() {
+        String result = PostgreSQLJDBC.getInstance().processTransactionCancel(AccountId, transactionId);
+        if (result == null){
+            return true;
+        }
+        else{
+            return false;
+        }
+
+    }
 }

@@ -8,4 +8,16 @@ public class OrderTransactions extends Transactions{
     void changeOrder(){
         //TODO: including add, execute(change Table Order)
     }
+
+    @Override
+    public boolean execute() {
+        String result = PostgreSQLJDBC.getInstance().processTransactionOrder(AccountId, symbolName, symbolAmount, priceLimit);
+        if (result == null){
+            return true;
+        }
+        else{
+            return false;
+        }
+
+    }
 }

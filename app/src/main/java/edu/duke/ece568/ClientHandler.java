@@ -2,8 +2,13 @@ package edu.duke.ece568;
 
 import edu.duke.ece568.tools.database.PostgreSQLJDBC;
 import edu.duke.ece568.tools.log.Logger;
+import edu.duke.ece568.tools.parser.CreateParser;
+import edu.duke.ece568.tools.parser.Parser;
 import edu.duke.ece568.tools.tcp.TCP;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -21,6 +26,10 @@ public class ClientHandler implements Runnable {
             // Recv from Client
             String str = TCP.recvMsg(this.clientSocket);
             logger.write("RECV: "+str);
+
+            // Parse the input xml
+            Parser parser =  new Parser(str).createParser();
+            parser.parse();
 
             if (str.equals("a")){
                 System.out.println(PostgreSQLJDBC.getInstance().createAccount(1,30000));
@@ -48,6 +57,10 @@ public class ClientHandler implements Runnable {
             this.clientSocket.close();
 
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParserConfigurationException e) {
+            e.printStackTrace();
+        } catch (SAXException e) {
             e.printStackTrace();
         }
     }

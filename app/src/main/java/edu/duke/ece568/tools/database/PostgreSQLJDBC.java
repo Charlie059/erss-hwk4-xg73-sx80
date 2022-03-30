@@ -365,12 +365,11 @@ public class PostgreSQLJDBC {
 
     //TODO TO BE CHECKED
     /**
-     * something goes wrong, return false; else, true
-     * buyer get return balance and position
+     * Buyer get return balance and position
      * seller get balance and lose position
      * @param account_id
      * @param returnBalance
-     * @return
+     * @return something goes wrong, return false; else, true
      */
     private boolean paybackBalance(int account_id, double returnBalance){
         Double currBalance = getCurrentBalance(account_id);
@@ -414,9 +413,10 @@ public class PostgreSQLJDBC {
      * @param amount
      * @return
      */
-    //TODO don't understand the parm here
     private double executeMatchingOrder(ResultSet result, double amount, int AmountTran_Id, int Amountaccount_id, String Amountsymbol, double AmountLimit_price) {
-        int AmountorderId = getOrderID(AmountTran_Id); //TODO may change a name
+        Integer AmountorderId = getOrderID(AmountTran_Id);
+        if(AmountorderId == null) return 0;
+
         double executed_amount= 0;
 
         // Get potential matched order_id, tran_id, account_id, amount, limit_price
@@ -427,9 +427,10 @@ public class PostgreSQLJDBC {
             account_id = result.getInt("account_id");
             matchingAmount = result.getDouble("amount");
             limit_price = result.getDouble("limit_price");
-        }catch (SQLException e){Logger.getSingleton().write(e.getMessage()); return 0;} // TODO return 0?
+        }catch (SQLException e){Logger.getSingleton().write(e.getMessage()); return 0;}
 
         // Execute order
+
         // If potential matched amount is perfectly match to current order's amount
         if (matchingAmount + amount == 0){
             // Change both status from 'open' to 'executed'
@@ -441,22 +442,16 @@ public class PostgreSQLJDBC {
 
             // Trade settlement
             executed_amount = Math.abs(amount);
-
-            //TODO two method can be merge and which price is execute price?
             // If is a buy order
             if (amount > 0) executeReturnBalanceAndPosition(AmountLimit_price, limit_price, executed_amount, Amountaccount_id, account_id, Amountsymbol);
-//            // If is a selling order
+            // If is a selling order
             else executeReturnBalanceAndPosition(limit_price, limit_price, executed_amount, account_id, Amountaccount_id, Amountsymbol);
             return 0;
         }
-
-        //TODO have not check these condition
-
-        // After exe the new inserted order, there is still amount left and con-not be executed
+        // After execute the new inserted order, there is still amount left and cannot be executed
         else if ((matchingAmount + amount > 0 && amount > 0) || (matchingAmount + amount < 0 && amount < 0)){
-            //update amount and go next check and change matching's status from 'open' to 'executed' and
+            //update amount and go next check and change matching status from 'open' to 'executed' and
             //split amount(check if there has been splitted)
-
             String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+order_id+";";
             insertOrder(AmountTran_Id, Amountaccount_id, Amountsymbol, -matchingAmount, AmountLimit_price, "EXECUTED");
             double newAmount = matchingAmount + amount;
@@ -475,7 +470,6 @@ public class PostgreSQLJDBC {
         else if((matchingAmount + amount < 0 && amount > 0) || (matchingAmount + amount > 0 && amount < 0)){
             //change amount's status from 'open' to 'executed' and split matching(check if there has been splitted)
             String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+AmountorderId+";";
-
             insertOrder(tran_id, account_id, Amountsymbol, -amount, limit_price, "EXECUTED");
             double newMatchingAmount = matchingAmount + amount;
             String updateAmountForMatchingSQL = "UPDATE orders SET amount="+newMatchingAmount+" WHERE order_id="+order_id+";";
@@ -490,26 +484,21 @@ public class PostgreSQLJDBC {
             }
             return 0;
         }
-
-        //TODO: return balance and add position
-
-        //TODO: check this
         return 0;
     }
 
     //TODO TO BE CHECKED
-    private int getOrderID(int tranID) {
+    private Integer getOrderID(int tranID) {
         String getOrderIDSQL = "SELECT order_ID FROM orders WHERE trans_id="+tranID+" AND status=" + "'OPEN'" + ";";
         ResultSet result = runSQLQuery(getOrderIDSQL);
-        int order_id = -1;
+        Integer order_id = -1;
         try{
             result.next();
             order_id = result.getInt("order_id");
         }catch (SQLException e){
-            Logger logger = Logger.getSingleton();
-            logger.write(e.getMessage());
+            Logger.getSingleton().write(e.getMessage());
+            return null;
         }
-
         return order_id;
     }
 
@@ -623,7 +612,6 @@ public class PostgreSQLJDBC {
             }catch (SQLException e){
                 logger.write(e.getMessage());
             }
-
         }
         else if (amount < 0){
             createPosition(symbol, -amount, account_id);
@@ -649,11 +637,6 @@ public class PostgreSQLJDBC {
             logger.write(e.getMessage());
         }
     }
-
-
-
-
-
 
 
 }

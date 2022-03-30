@@ -1,5 +1,7 @@
 package edu.duke.ece568.tools.tcp;
 
+import edu.duke.ece568.tools.log.Logger;
+
 import javax.net.ServerSocketFactory;
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -60,7 +62,27 @@ public class TCP {
     public static String recvMsg(Socket socket) throws IOException {
         InputStream in = socket.getInputStream();
         var reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-        return reader.readLine();
+
+        int contentLength = 0;
+
+        // Read the first line of content length
+        String contentLenStr = reader.readLine();
+        try {
+            contentLength = Integer.parseInt(contentLenStr);
+        } catch (NumberFormatException e) {
+            Logger.getSingleton().write("Cannot find the content length");
+            return null;
+        }
+
+        int r;
+        StringBuilder xmlData = new StringBuilder(new String());
+        while ((r = reader.read()) != -1) {
+            if(contentLength <= 0) break;
+            xmlData.append((char) r);
+            contentLength--;
+        }
+
+        return String.valueOf(xmlData);
     }
 
 }

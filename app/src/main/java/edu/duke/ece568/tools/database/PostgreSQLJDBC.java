@@ -437,7 +437,7 @@ public class PostgreSQLJDBC {
             String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+order_id+";";
             runSQLUpdate(updateStatusForMatchingSQL); // change potential matched order to EXECUTED
 
-            String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+AmountorderId+";";
+            String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED', limit_price="+ limit_price +" WHERE order_id="+AmountorderId+";";
             runSQLUpdate(updateStatusForAmountSQL); // change current order to EXECUTED
 
             // Trade settlement
@@ -453,7 +453,7 @@ public class PostgreSQLJDBC {
             //update amount and go next check and change matching status from 'open' to 'executed' and
             //split amount(check if there has been splitted)
             String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+order_id+";";
-            insertOrder(AmountTran_Id, Amountaccount_id, Amountsymbol, -matchingAmount, AmountLimit_price, "EXECUTED");
+            insertOrder(AmountTran_Id, Amountaccount_id, Amountsymbol, -matchingAmount, limit_price, "EXECUTED");
             double newAmount = matchingAmount + amount;
             String updateAmountForAmountSQL = "UPDATE orders SET amount="+newAmount+" WHERE order_id="+AmountorderId+";";
             runSQLUpdate(updateStatusForMatchingSQL);
@@ -469,7 +469,7 @@ public class PostgreSQLJDBC {
         }
         else if((matchingAmount + amount < 0 && amount > 0) || (matchingAmount + amount > 0 && amount < 0)){
             //change amount's status from 'open' to 'executed' and split matching(check if there has been splitted)
-            String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+AmountorderId+";";
+            String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED', limit_price="+ limit_price +" WHERE order_id="+AmountorderId+";";
             insertOrder(tran_id, account_id, Amountsymbol, -amount, limit_price, "EXECUTED");
             double newMatchingAmount = matchingAmount + amount;
             String updateAmountForMatchingSQL = "UPDATE orders SET amount="+newMatchingAmount+" WHERE order_id="+order_id+";";
@@ -564,6 +564,7 @@ public class PostgreSQLJDBC {
         }catch (SQLException e){
             Logger logger = Logger.getSingleton();
             logger.write(e.getMessage());
+            return null;
         }
         return result;
     }
@@ -572,6 +573,9 @@ public class PostgreSQLJDBC {
 
     private String checkCancelAccount(int account_id, int trans_id){
         ResultSet result = getCancelledOrder(trans_id);
+        if (result == null){
+            return "no such transactionID is open to be canceled";
+        }
         int AccountIdOfOrder = 0;
         try{
             AccountIdOfOrder = result.getInt("Account_id");
@@ -584,6 +588,9 @@ public class PostgreSQLJDBC {
         }
         return null;
     }
+
+
+
     //TODO TO BE CHECKED
     public String processTransactionCancel(int account_id, int trans_id){
         //change status from OPEN to CANCELLED
@@ -620,8 +627,42 @@ public class PostgreSQLJDBC {
     }
 
 
+    private ResultSet checkTransactionIdExist(int trans_id){
+        String getQuerySQL = "SELECT * FROM orders WHERE trans_id="+trans_id+ ";";
+        ResultSet result = runSQLQuery(getQuerySQL);
+        try{
+            result.next();
+        }catch (SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+            return null;
+        }
+
+        return result;
+    }
+    //TODO: must be add to main() before processTransactionQuery
+    public String checkTransactionQuery(int account_id, int trans_id){
+        ResultSet result = checkTransactionIdExist(trans_id);
+        if (result == null){
+            return "the trans_id does not exist";
+        }
+        int AccountIdOfOrder = 0;
+        try{
+            AccountIdOfOrder = result.getInt("Account_id");
+        }catch(SQLException e){
+            Logger logger = Logger.getSingleton();
+            logger.write(e.getMessage());
+        }
+        if (AccountIdOfOrder != account_id){
+            return "This account can not query a transaction order that does not belong to this account";
+        }
+        return null;
+
+    }
+
     //TODO TO BE CHECKED
     public ResultSet processTransactionQuery(int account_id, int trans_id){
+
         String querySQL = "SELECT * FROM orders WHERE trans_id="+trans_id;
         ResultSet result = runSQLQuery(querySQL);
         return result;

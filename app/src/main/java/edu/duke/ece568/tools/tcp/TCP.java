@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 public class TCP {
     private final int portNum;
     private final ServerSocket serverSocket;
+    private Socket clientSocket;
 
     /**
      * Constructor of TCP
@@ -35,7 +36,8 @@ public class TCP {
      * @throws IOException
      */
     public Socket acceptClient() throws IOException {
-        return this.serverSocket.accept();
+        this.clientSocket = this.serverSocket.accept();
+        return this.clientSocket;
     }
 
     /**
@@ -81,7 +83,6 @@ public class TCP {
             xmlData.append((char) r);
             contentLength--;
         }
-
         return String.valueOf(xmlData);
     }
 

@@ -233,8 +233,8 @@ public class PostgreSQLJDBC {
      * @param limit_price
      * @return true for success
      */
-    public boolean insertOrder(int trans_id, int account_id, String symbol, double amount, double limit_price, String status){
-        String insertSQL = "INSERT INTO orders (trans_id, account_id, symbol, amount, limit_price, status) VALUES ("+ trans_id +","+ account_id +"," + "'" + symbol + "'" + "," +  amount + "," + limit_price +"," + "'" + status + "'"+");";
+    public boolean insertOrder(int trans_id, int account_id, String symbol, double amount, double limit_price, String status, long currtime){
+        String insertSQL = "INSERT INTO orders (trans_id, account_id, symbol, amount, limit_price, status, time) VALUES ("+ trans_id +","+ account_id +"," + "'" + symbol + "'" + "," +  amount + "," + limit_price +"," + "'" + status + "'"+","+currtime+");";
         return runSQLUpdate(insertSQL);
     }
 
@@ -441,10 +441,11 @@ public class PostgreSQLJDBC {
         // If potential matched amount is perfectly match to current order's amount
         if (matchingAmount + amount == 0){
             // Change both status from 'open' to 'executed'
-            String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+order_id+";";
+            long currtime = java.time.Instant.now().getEpochSecond();//java.time.Instant.now().getEpochSecond()
+            String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED', time="+currtime+" WHERE order_id="+order_id+";";
             runSQLUpdate(updateStatusForMatchingSQL); // change potential matched order to EXECUTED
 
-            String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED', limit_price="+ limit_price +" WHERE order_id="+AmountorderId+";";
+            String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED', time="+currtime+" limit_price="+ limit_price +" WHERE order_id="+AmountorderId+";";
             runSQLUpdate(updateStatusForAmountSQL); // change current order to EXECUTED
 
             // Trade settlement
@@ -459,10 +460,12 @@ public class PostgreSQLJDBC {
         else if ((matchingAmount + amount > 0 && amount > 0) || (matchingAmount + amount < 0 && amount < 0)){
             //update amount and go next check and change matching status from 'open' to 'executed' and
             //split amount(check if there has been splitted)
-            String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED' WHERE order_id="+order_id+";";
-            insertOrder(AmountTran_Id, Amountaccount_id, Amountsymbol, -matchingAmount, limit_price, "EXECUTED");
+            long currtime = java.time.Instant.now().getEpochSecond();
+            String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED', time="+currtime+" WHERE order_id="+order_id+";";
+
+            insertOrder(AmountTran_Id, Amountaccount_id, Amountsymbol, -matchingAmount, limit_price, "EXECUTED", currtime);
             double newAmount = matchingAmount + amount;
-            String updateAmountForAmountSQL = "UPDATE orders SET amount="+newAmount+" WHERE order_id="+AmountorderId+";";
+            String updateAmountForAmountSQL = "UPDATE orders SET amount="+newAmount+", time="+currtime+" WHERE order_id="+AmountorderId+";";
             runSQLUpdate(updateStatusForMatchingSQL);
             runSQLUpdate(updateAmountForAmountSQL);
             executed_amount = Math.abs(matchingAmount);
@@ -476,10 +479,12 @@ public class PostgreSQLJDBC {
         }
         else if((matchingAmount + amount < 0 && amount > 0) || (matchingAmount + amount > 0 && amount < 0)){
             //change amount's status from 'open' to 'executed' and split matching(check if there has been splitted)
+            long currtime = java.time.Instant.now().getEpochSecond();
             String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED', limit_price="+ limit_price +" WHERE order_id="+AmountorderId+";";
-            insertOrder(tran_id, account_id, Amountsymbol, -amount, limit_price, "EXECUTED");
+
+            insertOrder(tran_id, account_id, Amountsymbol, -amount, limit_price, "EXECUTED", currtime);
             double newMatchingAmount = matchingAmount + amount;
-            String updateAmountForMatchingSQL = "UPDATE orders SET amount="+newMatchingAmount+" WHERE order_id="+order_id+";";
+            String updateAmountForMatchingSQL = "UPDATE orders SET amount="+newMatchingAmount+", time="+currtime+" WHERE order_id="+order_id+";";
             runSQLUpdate(updateAmountForMatchingSQL);
             runSQLUpdate(updateStatusForAmountSQL);
             executed_amount = Math.abs(amount);
@@ -524,7 +529,7 @@ public class PostgreSQLJDBC {
         else{  // if the account is available, add this order to Orders Table
             //int tran_id = TransactionCounter.getInstance().getCurrent_id();
             // Insert Order to the DB
-            if(!insertOrder(tran_id, account_id, symbol, amount, limit_price, "OPEN")) return "The execution of runSQL has error!";
+
 
             // Reduce buyer's balance or Reduce seller's positions amount
             try {
@@ -537,6 +542,8 @@ public class PostgreSQLJDBC {
             }catch (SQLException e){
                 Logger.getSingleton().write(e.getMessage());
             }
+            long currtime = java.time.Instant.now().getEpochSecond();
+            if(!insertOrder(tran_id, account_id, symbol, amount, limit_price, "OPEN", currtime)) return "The execution of runSQL has error!";
 
             // Match one or more orders
             double amount_temp = amount; // temp amount
@@ -611,7 +618,8 @@ public class PostgreSQLJDBC {
             return cancelPermission;
         }
         ResultSet result = getCancelledOrder(trans_id);
-        String changeStatusSQL = "UPDATE orders SET status='CANCELLED' WHERE trans_id="+trans_id+ " AND status=" + "'OPEN'"+ ";";
+        long currtime = java.time.Instant.now().getEpochSecond();
+        String changeStatusSQL = "UPDATE orders SET status='CANCELLED', time="+currtime+" WHERE trans_id="+trans_id+ " AND status=" + "'OPEN'"+ ";";
         runSQLUpdate(changeStatusSQL);
         //give back the Position or Balance
         double amount = 0;

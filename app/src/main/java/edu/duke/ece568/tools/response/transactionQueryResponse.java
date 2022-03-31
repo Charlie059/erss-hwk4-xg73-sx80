@@ -19,11 +19,11 @@ public class transactionQueryResponse {
                 if (status.equals("OPEN")){
                     response += "    <open shares="+amount+"/>\n";
                 }
-                if (status == "CANCELLED"){
-                    response += "    <canceled shares="+amount+" time=  />\n";
+                if (status.equals("CANCELLED")){
+                    response += "    <canceled shares="+amount+" time="+currtime+"/>\n";
                 }
-                if (status == "EXECUTED"){
-                    response += "    <executed shares="+amount+" price="+price+" time=  />\n";
+                if (status.equals("EXECUTED")){
+                    response += "    <executed shares="+amount+" price="+price+" time="+currtime+"/>\n";
                 }
             }
             response += "  </status>\n";

@@ -19,12 +19,12 @@ public class transactionCancelResponse {
                 String status = result.getString("Status");
                 double amount = result.getDouble("Amount");
                 double price = result.getDouble("Limit_price");
-
-                if (status == "CANCELLED"){
-                    response += "    <canceled shares="+amount+" time=  />\n";
+                long currtime = result.getLong("Time");
+                if (status.equals("CANCELLED")){
+                    response += "    <canceled shares="+amount+" time="+currtime+"/>\n";
                 }
-                if (status == "EXECUTED"){
-                    response += "    <executed shares="+amount+" price="+price+" time=  />\n";
+                if (status.equals("EXECUTED")){
+                    response += "    <executed shares="+amount+" price="+price+" time="+currtime+"/>\n";
                 }
             }
             response += "  </canceled>\n";

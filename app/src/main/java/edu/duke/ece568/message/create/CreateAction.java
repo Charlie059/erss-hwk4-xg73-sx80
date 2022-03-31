@@ -12,7 +12,7 @@ public abstract class CreateAction implements Message {
     int accountId;
 
     //TODO: add field DATABASE
-    public abstract boolean execute();
+    public abstract String execute();
 
 
 }

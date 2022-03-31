@@ -2,8 +2,6 @@ package edu.duke.ece568.message.create;
 
 import edu.duke.ece568.tools.database.PostgreSQLJDBC;
 
-import java.util.Objects;
-
 public class AccountCreateAction extends CreateAction{
     double balance;
 
@@ -14,14 +12,9 @@ public class AccountCreateAction extends CreateAction{
     }
     //TODO: add new element to DATABASE Account
     @Override
-    public boolean execute(){
+    public String execute(){
         String result = PostgreSQLJDBC.getInstance().createAccount(accountId, balance);
-        if (result == null){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return result;
     }
 
 }

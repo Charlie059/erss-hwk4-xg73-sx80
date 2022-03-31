@@ -1,0 +1,8 @@
+100
+<?xml version="1.0" encoding="UTF-8"?>
+<transactions id="123457">
+    <order sym="SPY" amount="-120" limit="100"/>
+    <order sym="APPL" amount="130" limit="100"/>
+    <cancel id="3"/>
+    <query id="4"/>
+</transactions>

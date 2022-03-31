@@ -87,6 +87,7 @@ public class PostgreSQLJDBC {
                 "                        Amount real NOT NULL,\n" +
                 "                        Limit_price real NOT NULL CONSTRAINT positive_price CHECK (Limit_price >= 0),\n" +
                 "                        Status Status_enum NOT NULL DEFAULT 'OPEN',\n" +
+                "                        Time bigint NOT NULL,\n" +
                 "                        FOREIGN KEY(Account_id) REFERENCES Accounts(Account_id) ON DELETE CASCADE\n" +
                 ");";
         this.runSQLUpdate(buildSQL);
@@ -391,8 +392,7 @@ public class PostgreSQLJDBC {
     //TODO TO BE CHECKED
     private boolean getPositionForBuyer(String symbol, double amount, int account_id){
         String message = createPosition(symbol, amount, account_id);
-        String expected = "You have successfully create the symbol "+ symbol + "and it is in account" + account_id;
-        if(message == expected){
+        if(message == null){
             return true;
         }
         return false;

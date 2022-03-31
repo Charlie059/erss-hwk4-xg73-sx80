@@ -24,13 +24,8 @@ public class SymbolCreateAction extends CreateAction{
     }
     //TODO: add new element to DATABASE Symbol
     @Override
-    public boolean execute(){
+    public String execute(){
         String result = PostgreSQLJDBC.getInstance().createPosition(symbolName, symbolAmount, accountId);
-        if (result == null){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return result;
     }
 }

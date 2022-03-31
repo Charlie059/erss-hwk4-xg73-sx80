@@ -3,13 +3,29 @@ package edu.duke.ece568.message.transactions;
 import edu.duke.ece568.tools.database.PostgreSQLJDBC;
 
 public class OrderTransactions extends Transactions{
+    public String getSymbolName() {
+        return symbolName;
+    }
+
+    public double getSymbolAmount() {
+        return symbolAmount;
+    }
+
+    public double getPriceLimit() {
+        return priceLimit;
+    }
+
+    public int getTran_id() {
+        return tran_id;
+    }
+
     String symbolName;
-    int symbolAmount;
-    int priceLimit;
+    double symbolAmount;
+    double priceLimit;
     int tran_id;
 
 
-    public OrderTransactions(int accountId, String symbolName, int symbolAmount, int priceLimit, int tran_id) {
+    public OrderTransactions(int accountId, String symbolName, double symbolAmount, double priceLimit, int tran_id) {
         this.AccountId = accountId;
         this.symbolName = symbolName;
         this.symbolAmount = symbolAmount;
@@ -20,14 +36,8 @@ public class OrderTransactions extends Transactions{
 
 
     @Override
-    public boolean execute() {
+    public String execute() {
         String result = PostgreSQLJDBC.getInstance().processTransactionOrder(AccountId, symbolName, symbolAmount, priceLimit, tran_id);
-        if (result == null){
-            return true;
-        }
-        else{
-            return false;
-        }
-
+        return result;
     }
 }

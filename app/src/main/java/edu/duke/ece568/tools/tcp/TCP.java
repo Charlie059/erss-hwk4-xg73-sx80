@@ -70,6 +70,7 @@ public class TCP {
         // Read the first line of content length
         String contentLenStr = reader.readLine();
         try {
+            // We did not use contentLength here because the sample in example is wrong
             contentLength = Integer.parseInt(contentLenStr);
         } catch (NumberFormatException e) {
             Logger.getSingleton().write("Cannot find the content length");
@@ -79,9 +80,9 @@ public class TCP {
         int r;
         StringBuilder xmlData = new StringBuilder(new String());
         while ((r = reader.read()) != -1) {
-            if(contentLength <= 0) break;
             xmlData.append((char) r);
-            contentLength--;
+            // We assume the client can only send one <create> or <transaction> each time, once we read it, we stop reading and return
+            if(String.valueOf(xmlData).contains("</create>") || String.valueOf(xmlData).contains("</transactions>")) break;
         }
         return String.valueOf(xmlData);
     }

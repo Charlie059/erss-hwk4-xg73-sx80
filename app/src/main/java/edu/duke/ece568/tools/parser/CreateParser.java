@@ -78,10 +78,10 @@ public class CreateParser extends Parser {
         StringBuilder ans = new StringBuilder("<results>\n");
         for (int i = 0; i < this.createActions.size(); i++) {
             // Execute action
-            boolean exeResult =  this.createActions.get(i).execute();
+            String exeResult =  this.createActions.get(i).execute();
 
             // If execute success
-            if(exeResult){
+            if(exeResult == null){
                 // If we get AccountCreateAction
                 if(this.createActions.get(i).getClass() == AccountCreateAction.class){
                     createAccountResponse createAccountResponse = new createAccountResponse(createActions.get(i).getAccountId());
@@ -98,13 +98,13 @@ public class CreateParser extends Parser {
             else{
                 // If we get AccountCreateAction
                 if(this.createActions.get(i).getClass() == AccountCreateAction.class){
-                    createAccountErrorResponse createAccountErrorResponse = new createAccountErrorResponse(createActions.get(i).getAccountId());
+                    createAccountErrorResponse createAccountErrorResponse = new createAccountErrorResponse(createActions.get(i).getAccountId(), exeResult);
                     ans.append(createAccountErrorResponse.getResponse());
                 }
                 else{ // If we get SymbolCreateAction
                     // Transfer CreateAction to SymbolCreateAction
                     SymbolCreateAction symbolCreateAction = (SymbolCreateAction) this.createActions.get(i);
-                    createPositionErrorResponse createPositionErrorResponse = new createPositionErrorResponse(symbolCreateAction.getAccountId(),symbolCreateAction.getSymbolName());
+                    createPositionErrorResponse createPositionErrorResponse = new createPositionErrorResponse(symbolCreateAction.getAccountId(),symbolCreateAction.getSymbolName(), exeResult);
                     ans.append(createPositionErrorResponse.getResponse());
                 }
             }

@@ -22,7 +22,4 @@ class TransactionParserTest {
         parser.run();
     }
 
-    @Test
-    void run() {
-    }
 }

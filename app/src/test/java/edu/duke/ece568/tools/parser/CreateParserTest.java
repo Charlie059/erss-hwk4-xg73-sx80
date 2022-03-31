@@ -16,10 +16,7 @@ class CreateParserTest {
 
     @Test
     void parse() throws ParserConfigurationException, IOException, SAXException {
-        String xml = Files.readString(Path.of("../XMLSamples/create.xml"), StandardCharsets.UTF_8);
-        System.out.println(xml);
-        Parser parser = new Parser(xml).createParser();
-        parser.parse();
-        parser.run();
+        String xml = Files.readString(Path.of("../XMLSamples/testCount.xml"), StandardCharsets.UTF_8);
+        System.out.println(xml.length());
     }
 }

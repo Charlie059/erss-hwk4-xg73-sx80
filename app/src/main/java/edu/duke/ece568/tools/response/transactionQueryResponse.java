@@ -12,10 +12,11 @@ public class transactionQueryResponse {
         response = "  <status id=\""+trans_id+"\">\n";
         try{
             while(result.next()){
-                String status = result.getString("Status");
-                double amount = result.getDouble("Amount");
-                double price = result.getDouble("Limit_price");
-                if (status == "OPEN"){
+                String status = result.getString("status");
+                double amount = result.getDouble("amount");
+                double price = result.getDouble("limit_price");
+                long currtime = result.getLong("Time");
+                if (status.equals("OPEN")){
                     response += "    <open shares="+amount+"/>\n";
                 }
                 if (status == "CANCELLED"){

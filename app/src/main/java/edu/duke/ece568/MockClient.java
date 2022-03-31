@@ -6,6 +6,8 @@ package edu.duke.ece568;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class MockClient {
 
@@ -58,7 +60,7 @@ public class MockClient {
     StringBuilder request= new StringBuilder();
     String temp=in.readLine();
     while(temp!=null) {
-      request.append(temp);
+      request.append(temp + "\n");
       temp=in.readLine();
       if(temp.contains("</results>")){
         request.append(temp);
@@ -72,14 +74,8 @@ public class MockClient {
   public static void main(String[] args) {
     try {
       MockClient mockClient = new MockClient(12345,"127.0.0.1");
-      mockClient.sendMsg("173\n" +
-              "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-              "<create>\n" +
-              " <account id=\"123456\" balance=\"1000\"/>\n" +
-              " <symbol sym=\"SPY\">\n" +
-              " <account id=\"123456\">100000</account>\n" +
-              " </symbol>\n" +
-              "</create> ");
+      String content = Files.readString(Path.of("XMLSamples/create.xml"), StandardCharsets.US_ASCII);
+      mockClient.sendMsg(content);
 
       // Shut down the output
       mockClient.socket.shutdownOutput();

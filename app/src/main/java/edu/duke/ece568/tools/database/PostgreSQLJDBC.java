@@ -298,22 +298,27 @@ public class PostgreSQLJDBC {
      * @return
      * @throws SQLException
      */
-    private String getPositionOutForSeller(int account_id, String symbol, double amount) throws SQLException {
+    private String getPositionOutForSeller(int account_id, String symbol, double amount)  {
         String getCurrentPositionSQL = "SELECT * FROM positions WHERE symbol=" + "'" + symbol + "'" + " AND account_id=" +account_id + ";";
         ResultSet result = runSQLQuery(getCurrentPositionSQL);
-        result.next();
-        double originalAmount = result.getDouble("Amount");
-        double newAmount = originalAmount + amount;
-        if (amount > originalAmount){
-            return "The seller can not make this order because not enough symbol";
-        }
-        String changePositionAmountSQL = "UPDATE positions SET amount=" + newAmount + " WHERE symbol="+ "'" + symbol + "'" + " AND account_id=" +account_id + ";";
-        boolean runSuccess = runSQLUpdate(changePositionAmountSQL);
-        if (runSuccess == true){
-            return null;
-        }
-        else{
-            return "The execution of runSQL has error!";
+        try {
+            result.next();
+
+            double originalAmount = result.getDouble("Amount");
+            double newAmount = originalAmount + amount;
+            if (amount > originalAmount){
+                return "The seller can not make this order because not enough symbol";
+            }
+            String changePositionAmountSQL = "UPDATE positions SET amount=" + newAmount + " WHERE symbol="+ "'" + symbol + "'" + " AND account_id=" +account_id + ";";
+            boolean runSuccess = runSQLUpdate(changePositionAmountSQL);
+            if (runSuccess == true){
+                return null;
+            }
+            else{
+                return "The execution of runSQL has error!";
+            }
+        }catch (SQLException e){
+            return "This account can not sell this symbol because it does not have this symbol";
         }
     }
 
@@ -574,6 +579,10 @@ public class PostgreSQLJDBC {
 
 
     private String checkCancelAccount(int account_id, int trans_id){
+        ResultSet resultoftransId = checkTransactionIdExist(trans_id);
+        if (resultoftransId == null){
+            return "the trans_id does not exist";
+        }
         ResultSet result = getCancelledOrder(trans_id);
         if (result == null){
             return "no such transactionID is open to be canceled";

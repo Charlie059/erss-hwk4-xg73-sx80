@@ -2,8 +2,19 @@ package edu.duke.ece568.message.create;
 
 import edu.duke.ece568.tools.database.PostgreSQLJDBC;
 
+import java.util.Objects;
+
 public class SymbolCreateAction extends CreateAction{
     String symbolName;
+
+    public String getSymbolName() {
+        return symbolName;
+    }
+
+    public double getSymbolAmount() {
+        return symbolAmount;
+    }
+
     double symbolAmount;
 
     public SymbolCreateAction(int accountId, String symbolName, double symbolAmount){
@@ -15,7 +26,7 @@ public class SymbolCreateAction extends CreateAction{
     @Override
     public boolean execute(){
         String result = PostgreSQLJDBC.getInstance().createPosition(symbolName, symbolAmount, accountId);
-        if (result == "You have successfully create the symbol "+ symbolName + " and it is in account" + accountId){
+        if (result == null){
             return true;
         }
         else{

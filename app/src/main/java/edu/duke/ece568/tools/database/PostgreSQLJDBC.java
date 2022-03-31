@@ -157,7 +157,7 @@ public class PostgreSQLJDBC {
      * Insert Account to DB (Check permission and insert)
      * @param accountID int
      * @param balance double
-     * @return true for success
+     * @return null for success, else return string
      */
     public String createAccount(int accountID, double balance){
         boolean accountExist = false;//if true, create; else, not create
@@ -168,7 +168,7 @@ public class PostgreSQLJDBC {
         if (accountExist) return "You can not create account "+accountID+" because it exists!";
         else{  // If createPermission is grant, execute insert
             String insertSQL = "INSERT INTO accounts (account_id, balance) VALUES" +  "(" + accountID +"," + balance + ");";
-            if (runSQLUpdate(insertSQL)) return "You have successfully create the account "+ accountID;
+            if (runSQLUpdate(insertSQL)) return null;
             else return "The execution of runSQL has error!";
         }
     }
@@ -193,7 +193,7 @@ public class PostgreSQLJDBC {
      * @param symbol
      * @param amount
      * @param account_id
-     * @return true for success
+     * @return null for success
      */
     public String createPosition(String symbol, double amount, int account_id){
         String insertSQL = null;
@@ -214,9 +214,10 @@ public class PostgreSQLJDBC {
 
         }catch (SQLException e){
             Logger.getSingleton().write(e.getMessage());
+            return "Cannot create position";
         }
         // Run update or insert in DB
-        if (runSQLUpdate(insertSQL)) return "You have successfully create the symbol "+ symbol + " and it is in account" + account_id;
+        if (runSQLUpdate(insertSQL)) return null;
         else return "The execution of Create SQL has error!";
     }
 

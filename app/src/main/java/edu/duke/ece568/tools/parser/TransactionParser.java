@@ -31,7 +31,26 @@ public class TransactionParser extends Parser{
         NamedNodeMap transactionAttrs = document.getDocumentElement().getAttributes();
         String accountID = transactionAttrs.item(0).getNodeValue();
 
+        // Get the children of transactions
         for (int i = 0; i < nodeList.getLength(); i++) {
+            if (nodeList.item(i).getNodeType() == Node.ELEMENT_NODE) {
+                System.out.println(nodeList.item(i).getNodeName());
+
+                // If <order> node
+                if(nodeList.item(i).getNodeName().equals("order")){
+                    // get order attr
+                    NamedNodeMap order_Attrs = nodeList.item(i).getAttributes();
+
+                }
+                // If <query> node
+                else if(nodeList.item(i).getNodeName().equals("query")){
+
+                }
+                // If <cancel> node
+                else if(nodeList.item(i).getNodeName().equals("cancel")){
+
+                }
+            }
 
 //            if (nodeList.item(i).getNodeType() == Node.ELEMENT_NODE) {
 //                // if we meet <account> tag then create a createAction
@@ -71,9 +90,10 @@ public class TransactionParser extends Parser{
     }
 
     @Override
-    public void run(){
+    public String run(){
 //        for (int i = 0; i < this.createActions.size(); i++) {
 //            this.createActions.get(i).execute();
 //        }
+        return null;
     }
 }

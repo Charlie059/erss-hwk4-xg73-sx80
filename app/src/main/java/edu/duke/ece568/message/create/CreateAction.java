@@ -5,6 +5,10 @@ import edu.duke.ece568.tools.database.PostgreSQLJDBC;
 
 
 public abstract class CreateAction implements Message {
+    public int getAccountId() {
+        return accountId;
+    }
+
     int accountId;
 
     //TODO: add field DATABASE

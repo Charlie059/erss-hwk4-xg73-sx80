@@ -53,5 +53,7 @@ public class Parser {
         }
     }
 
-    public void run(){};
+    public String run(){
+        return null;
+    };
 }

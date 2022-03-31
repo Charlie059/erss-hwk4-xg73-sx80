@@ -5,8 +5,9 @@ import edu.duke.ece568.tools.database.PostgreSQLJDBC;
 public class CancelTransactions extends Transactions{
     int transactionId;
 
-    void changeOrder(){
-
+    public CancelTransactions(int accountId, int transactionId) {
+        this.AccountId = accountId;
+        this.transactionId = transactionId;
     }
 
     @Override

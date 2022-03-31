@@ -12,14 +12,9 @@ public class AccountCreateAction extends CreateAction{
     }
     //TODO: add new element to DATABASE Account
     @Override
-    public boolean execute(){
+    public String execute(){
         String result = PostgreSQLJDBC.getInstance().createAccount(accountId, balance);
-        if (result == "You have successfully create the account "+ accountId){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return result;
     }
 
 }

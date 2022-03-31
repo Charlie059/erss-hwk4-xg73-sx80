@@ -13,13 +13,8 @@ public class SymbolCreateAction extends CreateAction{
     }
     //TODO: add new element to DATABASE Symbol
     @Override
-    public boolean execute(){
+    public String execute(){
         String result = PostgreSQLJDBC.getInstance().createPosition(symbolName, symbolAmount, accountId);
-        if (result == "You have successfully create the symbol "+ symbolName + " and it is in account" + accountId){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return result;
     }
 }

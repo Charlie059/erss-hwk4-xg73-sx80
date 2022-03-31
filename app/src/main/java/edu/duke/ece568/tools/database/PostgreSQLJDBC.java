@@ -163,12 +163,12 @@ public class PostgreSQLJDBC {
         boolean accountExist = false;//if true, create; else, not create
         // try to grant permission of creating account
         accountExist = checkAccountExist(accountID);
-
+        if(balance<0){return "You can not create a account with negative balance";}
         // If createPermission indicates true that means the account exist, return error
         if (accountExist) return "You can not create account "+accountID+" because it exists!";
         else{  // If createPermission is grant, execute insert
             String insertSQL = "INSERT INTO accounts (account_id, balance) VALUES" +  "(" + accountID +"," + balance + ");";
-            if (runSQLUpdate(insertSQL)) return "You have successfully create the account "+ accountID;
+            if (runSQLUpdate(insertSQL)) return null;//"You have successfully create the account "+ accountID;
             else return "The execution of runSQL has error!";
         }
     }
@@ -196,6 +196,7 @@ public class PostgreSQLJDBC {
      * @return true for success
      */
     public String createPosition(String symbol, double amount, int account_id){
+        if(amount<0){return "You can not create position with negative amount of symbol";}
         String insertSQL = null;
         try{
             // Try to check if symbol exist in account
@@ -214,9 +215,10 @@ public class PostgreSQLJDBC {
 
         }catch (SQLException e){
             Logger.getSingleton().write(e.getMessage());
+            return "The accountId is invalid";
         }
         // Run update or insert in DB
-        if (runSQLUpdate(insertSQL)) return "You have successfully create the symbol "+ symbol + " and it is in account" + account_id;
+        if (runSQLUpdate(insertSQL)) return null;//"You have successfully create the symbol "+ symbol + " and it is in account" + account_id;
         else return "The execution of Create SQL has error!";
     }
 
@@ -510,12 +512,12 @@ public class PostgreSQLJDBC {
      * @param limit_price
      * @return null for no error
      */
-    public String processTransactionOrder(int account_id, String symbol, double amount, double limit_price){
+    public String processTransactionOrder(int account_id, String symbol, double amount, double limit_price, int tran_id){
         // If account ID is not exist
         if (!checkAccountExist(account_id)) return "This account "+ account_id + " does not exist";
         else if(amount == 0) return "Cannot create order which amount is zero";
         else{  // if the account is available, add this order to Orders Table
-            int tran_id = TransactionCounter.getInstance().getCurrent_id();
+            //int tran_id = TransactionCounter.getInstance().getCurrent_id();
             // Insert Order to the DB
             if(!insertOrder(tran_id, account_id, symbol, amount, limit_price, "OPEN")) return "The execution of runSQL has error!";
 
@@ -678,6 +680,8 @@ public class PostgreSQLJDBC {
             logger.write(e.getMessage());
         }
     }
+
+
 
 
 }

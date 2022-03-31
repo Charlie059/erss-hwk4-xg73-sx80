@@ -41,9 +41,9 @@ public class ClientHandler implements Runnable {
 
 
                 //PostgreSQLJDBC.getInstance().insertOrder(1,1,"BTC",1000,100);
-                PostgreSQLJDBC.getInstance().processTransactionOrder(2,"BTC",-100,180);
-                PostgreSQLJDBC.getInstance().processTransactionOrder(1,"BTC",-100,150);
-                PostgreSQLJDBC.getInstance().processTransactionOrder(3,"BTC",50,200);
+                //PostgreSQLJDBC.getInstance().processTransactionOrder(2,"BTC",-100,180);
+                //PostgreSQLJDBC.getInstance().processTransactionOrder(1,"BTC",-100,150);
+                //PostgreSQLJDBC.getInstance().processTransactionOrder(3,"BTC",50,200);
                 PostgreSQLJDBC.getInstance().processTransactionCancel(2,1);
                 PostgreSQLJDBC.getInstance().processTransactionCancel(1,2); // TODO add a checker
 

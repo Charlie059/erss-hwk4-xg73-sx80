@@ -6,14 +6,22 @@ public class OrderTransactions extends Transactions{
     String symbolName;
     int symbolAmount;
     int priceLimit;
+    int tran_id;
 
-    void changeOrder(){
-        //TODO: including add, execute(change Table Order)
+
+    public OrderTransactions(int accountId, String symbolName, int symbolAmount, int priceLimit, int tran_id) {
+        this.AccountId = accountId;
+        this.symbolName = symbolName;
+        this.symbolAmount = symbolAmount;
+        this.priceLimit = priceLimit;
+        this.tran_id = tran_id;
     }
+
+
 
     @Override
     public boolean execute() {
-        String result = PostgreSQLJDBC.getInstance().processTransactionOrder(AccountId, symbolName, symbolAmount, priceLimit);
+        String result = PostgreSQLJDBC.getInstance().processTransactionOrder(AccountId, symbolName, symbolAmount, priceLimit, tran_id);
         if (result == null){
             return true;
         }

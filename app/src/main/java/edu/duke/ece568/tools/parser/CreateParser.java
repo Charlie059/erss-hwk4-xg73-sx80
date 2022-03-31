@@ -3,6 +3,10 @@ package edu.duke.ece568.tools.parser;
 import edu.duke.ece568.message.create.AccountCreateAction;
 import edu.duke.ece568.message.create.CreateAction;
 import edu.duke.ece568.message.create.SymbolCreateAction;
+import edu.duke.ece568.tools.response.createAccountErrorResponse;
+import edu.duke.ece568.tools.response.createAccountResponse;
+import edu.duke.ece568.tools.response.createPositionErrorResponse;
+import edu.duke.ece568.tools.response.createPositionResponse;
 import org.w3c.dom.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -61,7 +65,6 @@ public class CreateParser extends Parser {
                             NamedNodeMap positionAttr = positionList.item(j).getAttributes();
                             SymbolCreateAction symbolCreateAction = new SymbolCreateAction(Integer.parseInt(positionAttr.item(0).getNodeValue()), sym, Double.parseDouble(positionList.item(j).getTextContent()));
                             this.createActions.add(symbolCreateAction);
-                            //System.out.println("AccountID: " + positionAttr.item(0).getNodeValue() + " Amount: " + positionList.item(j).getTextContent() + " Sym:" + sym);
                         }
                     }
                 }
@@ -71,9 +74,42 @@ public class CreateParser extends Parser {
     }
 
     @Override
-    public void run(){
+    public String run(){
+        StringBuilder ans = new StringBuilder("<results>\n");
         for (int i = 0; i < this.createActions.size(); i++) {
-            this.createActions.get(i).execute();
+            // Execute action
+            boolean exeResult =  this.createActions.get(i).execute();
+
+            // If execute success
+            if(exeResult){
+                // If we get AccountCreateAction
+                if(this.createActions.get(i).getClass() == AccountCreateAction.class){
+                    createAccountResponse createAccountResponse = new createAccountResponse(createActions.get(i).getAccountId());
+                    ans.append(createAccountResponse.getResponse());
+                }
+                else{ // If we get SymbolCreateAction
+                    // Transfer CreateAction to SymbolCreateAction
+                    SymbolCreateAction symbolCreateAction = (SymbolCreateAction) this.createActions.get(i);
+                    createPositionResponse  createPositionResponse = new createPositionResponse(symbolCreateAction.getAccountId(),symbolCreateAction.getSymbolName());
+                    ans.append(createPositionResponse.getResponse());
+                }
+            }
+            // Else if execute fail
+            else{
+                // If we get AccountCreateAction
+                if(this.createActions.get(i).getClass() == AccountCreateAction.class){
+                    createAccountErrorResponse createAccountErrorResponse = new createAccountErrorResponse(createActions.get(i).getAccountId());
+                    ans.append(createAccountErrorResponse.getResponse());
+                }
+                else{ // If we get SymbolCreateAction
+                    // Transfer CreateAction to SymbolCreateAction
+                    SymbolCreateAction symbolCreateAction = (SymbolCreateAction) this.createActions.get(i);
+                    createPositionErrorResponse createPositionErrorResponse = new createPositionErrorResponse(symbolCreateAction.getAccountId(),symbolCreateAction.getSymbolName());
+                    ans.append(createPositionErrorResponse.getResponse());
+                }
+            }
         }
+        ans.append("</results>\n");
+        return ans.toString();
     }
 }

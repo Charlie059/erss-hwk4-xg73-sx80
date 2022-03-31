@@ -52,19 +52,44 @@ public class MockClient {
    * @throws IOException
    */
   public String recvMsg() throws IOException {
-    return this.reader.readLine();
+
+    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+    StringBuilder request= new StringBuilder();
+    String temp=in.readLine();
+    while(temp!=null) {
+      request.append(temp);
+      temp=in.readLine();
+      if(temp.contains("</results>")){
+        request.append(temp);
+        temp=in.readLine();
+        break;
+      }
+    }
+    return request.toString();
   }
 
-  public static void main(String[] args) throws IOException {
-    MockClient mockClient = new MockClient(12345,"127.0.0.1");
-    mockClient.sendMsg("173\n" +
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-            "<create>\n" +
-            " <account id=\"123456\" balance=\"1000\"/>\n" +
-            " <symbol sym=\"SPY\">\n" +
-            " <account id=\"123456\">100000</account>\n" +
-            " </symbol>\n" +
-            "</create> ");
+  public static void main(String[] args) {
+    try {
+      MockClient mockClient = new MockClient(12345,"127.0.0.1");
+      mockClient.sendMsg("173\n" +
+              "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+              "<create>\n" +
+              " <account id=\"123456\" balance=\"1000\"/>\n" +
+              " <symbol sym=\"SPY\">\n" +
+              " <account id=\"123456\">100000</account>\n" +
+              " </symbol>\n" +
+              "</create> ");
+
+      // Shut down the output
+      mockClient.socket.shutdownOutput();
+
+      String XMLResponse =  mockClient.recvMsg();
+      System.out.println(XMLResponse);
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
 }

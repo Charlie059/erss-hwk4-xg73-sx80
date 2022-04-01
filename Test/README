@@ -1,0 +1,1 @@
+If you want to run the test, you need to firstly set up server in VCM, and then using this .zip file to run "gradle run" to test the VCM (Please check the host addresss for your VCM), and you can adjust the num of thred runing in the client test.

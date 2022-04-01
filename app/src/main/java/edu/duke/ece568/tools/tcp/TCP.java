@@ -25,9 +25,9 @@ public class TCP {
      */
     public TCP(int portNum) throws IOException {
         this.portNum = portNum;
-        this.serverSocket = new ServerSocket(portNum);
-//        this.serverSocket = ServerSocketFactory.getDefault().createServerSocket();
-//        this.serverSocket.bind(new InetSocketAddress("0.0.0.0", portNum));
+//        this.serverSocket = new ServerSocket(portNum);
+        this.serverSocket = ServerSocketFactory.getDefault().createServerSocket();
+        this.serverSocket.bind(new InetSocketAddress("0.0.0.0", portNum));
     }
 
     /**

@@ -83,43 +83,30 @@ public class MockClient {
 
   public static void main(String[] args) {
 
-//    try {
-//      MockClient mockClient = new MockClient(12345,"127.0.0.1");
-//      String content = Files.readString(Path.of("XMLSamples/create.xml"), StandardCharsets.US_ASCII);
-//      mockClient.sendMsg(content);
-//
-//      // Shut down the output
-//      mockClient.socket.shutdownOutput();
-//
-//      String XMLResponse =  mockClient.recvMsg();
-//      System.out.println(XMLResponse);
-//
-//    } catch (IOException e) {
-//      e.printStackTrace();
-//    }
-
     // Create a time array
     List times = Collections.synchronizedList(new ArrayList<Long>());
 
-    int threadNum = 0;
+    int NUMTHREAD = 100;
+
+    int threadNumCounter = 0;
     try {
-      while (threadNum <= 100) {
+      while (threadNumCounter <= NUMTHREAD) {
         // accept tcp connection
-        MockClient mockClient = new MockClient(12345,"127.0.0.1");
+        MockClient mockClient = new MockClient(12345,"vcm-24574.vm.duke.edu");
 
 
         // create a new thread object
         ClientThread clientSock = new ClientThread(mockClient, times);
         new Thread(clientSock).start();
-        threadNum++;
+        threadNumCounter++;
       }
     } catch (IOException e) {
       e.printStackTrace();
     }
 
-    while (times.size() != 100){}
+    while (times.size() != NUMTHREAD){}
 
-    for (int i = 0; i < 100; i++){
+    for (int i = 0; i < NUMTHREAD; i++){
       System.out.println(times.get(i));
     }
 

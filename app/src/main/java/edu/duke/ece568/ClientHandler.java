@@ -37,16 +37,14 @@ public class ClientHandler implements Runnable {
                 XMLResult = parser.run();
             }
 
-
             // Add the content length filed to xml
             int contentLength = XMLResult.getBytes().length;
             String ans = contentLength + "\n";
             ans = ans + XMLResult;
+
             // Send to Client
             TCP.sendMsg(this.clientSocket, ans);
             logger.write("SEND: "+ans);
-
-            // Close the TCP Connection
 
         } catch (IOException | ParserConfigurationException | SAXException e) {
             e.printStackTrace();

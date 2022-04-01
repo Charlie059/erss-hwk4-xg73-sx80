@@ -34,6 +34,6 @@ public class Logger {
     }
 
     public void write(String log){
-        this.logger.info(log);
+//        this.logger.info(log);
     }
 }

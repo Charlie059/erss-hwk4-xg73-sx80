@@ -3,11 +3,16 @@
  */
 package edu.duke.ece568;
 
+import edu.duke.ece568.tools.log.Logger;
+
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class MockClient {
 
@@ -17,6 +22,11 @@ public class MockClient {
   private final OutputStream out;
   private final OutputStreamWriter writer;
   private final BufferedReader reader;
+
+  public Socket getSocket() {
+    return socket;
+  }
+
   private final Socket socket;
 
   /**
@@ -72,20 +82,47 @@ public class MockClient {
   }
 
   public static void main(String[] args) {
+
+//    try {
+//      MockClient mockClient = new MockClient(12345,"127.0.0.1");
+//      String content = Files.readString(Path.of("XMLSamples/create.xml"), StandardCharsets.US_ASCII);
+//      mockClient.sendMsg(content);
+//
+//      // Shut down the output
+//      mockClient.socket.shutdownOutput();
+//
+//      String XMLResponse =  mockClient.recvMsg();
+//      System.out.println(XMLResponse);
+//
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    }
+
+    // Create a time array
+    List times = Collections.synchronizedList(new ArrayList<Long>());
+
+    int threadNum = 0;
     try {
-      MockClient mockClient = new MockClient(12345,"127.0.0.1");
-      String content = Files.readString(Path.of("XMLSamples/create.xml"), StandardCharsets.US_ASCII);
-      mockClient.sendMsg(content);
+      while (threadNum <= 100) {
+        // accept tcp connection
+        MockClient mockClient = new MockClient(12345,"127.0.0.1");
 
-      // Shut down the output
-      mockClient.socket.shutdownOutput();
 
-      String XMLResponse =  mockClient.recvMsg();
-      System.out.println(XMLResponse);
-
+        // create a new thread object
+        ClientThread clientSock = new ClientThread(mockClient, times);
+        new Thread(clientSock).start();
+        threadNum++;
+      }
     } catch (IOException e) {
       e.printStackTrace();
     }
+
+    while (times.size() != 100){}
+
+    for (int i = 0; i < 100; i++){
+      System.out.println(times.get(i));
+    }
+
   }
 
 }

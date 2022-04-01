@@ -1,0 +1,9 @@
+1. The meaning of the integer in the first line of request XML is ambiguous,
+So we have to assume that the content length sent by the client will be correct.
+If it has problem, we can not stop reading message from client or we may read imcomplete message.
+
+2. We check input error in the database related action, and spread out the info of error
+to the response handler.
+
+3. We must do checker and process Query both in the request handler, although it is more complicated
+and may import some instability, but we need resultSet and errorMessage the same time.

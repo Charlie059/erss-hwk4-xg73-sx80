@@ -445,7 +445,7 @@ public class PostgreSQLJDBC {
             String updateStatusForMatchingSQL = "UPDATE orders SET status='EXECUTED', time="+currtime+" WHERE order_id="+order_id+";";
             runSQLUpdate(updateStatusForMatchingSQL); // change potential matched order to EXECUTED
 
-            String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED', time="+currtime+" limit_price="+ limit_price +" WHERE order_id="+AmountorderId+";";
+            String updateStatusForAmountSQL = "UPDATE orders SET status='EXECUTED', time="+currtime+", limit_price="+ limit_price +" WHERE order_id="+AmountorderId+";";
             runSQLUpdate(updateStatusForAmountSQL); // change current order to EXECUTED
 
             // Trade settlement
